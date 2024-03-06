@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui' show Canvas, Clip, Offset, Paint, PointMode, Size;
 
 import 'package:flutter/gestures.dart';
@@ -46,7 +47,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Objeto? _objetoAtual;
 
-  final todosObjetos = <Objeto>[];
+  // final todosObjetos = <Objeto>[];
+  List<Objeto> todosObjetos = [];
   var scale = 60.0;
   var rastAlg = false;
   var recoAlg = false;
@@ -55,13 +57,30 @@ class _MyHomePageState extends State<MyHomePage> {
   var _rasterizacao = Rasterizacao.dda;
   var _recorte = Recorte.sohenSutherland;
 
-  void _botaoLinha(TapUpDetails details) {
+  _MyHomePageState() {
+    _criarObjeto();
+  }
+
+  void _criarObjeto() {
+    _objetoAtual = Objeto(fechar);
+    todosObjetos.add(_objetoAtual!);
+  }
+
+  void _criarCirculo() {
+    _objetoAtual = Circulo(fechar);
+    todosObjetos.add(_objetoAtual!);
+  }
+
+  void _adicionarPontoObjeto(TapUpDetails details) {
     setState(() {
-      if (_objetoAtual == null) {
-        _objetoAtual = Objeto(fechar);
+      if (_objetoAtual is! Circulo) {
+        _objetoAtual?.points.add(details.localPosition);
+      } else if (_objetoAtual!.points.length < 2) {
+        _objetoAtual?.points.add(details.localPosition);
+      } else {
+        _objetoAtual = Circulo(fechar);
         todosObjetos.add(_objetoAtual!);
       }
-      _objetoAtual?.points.add(details.localPosition);
     });
   }
 
@@ -71,17 +90,24 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _limparObjetoAtual() {
+  void _botaoObjetoAtual() {
     setState(() {
-      _objetoAtual = null;
       fechar = false;
+      _criarObjeto();
     });
   }
 
-  void _limparObjetoAtualFechar() {
+  void _botaoObjetoAtualFechar() {
     setState(() {
-      _objetoAtual = null;
       fechar = true;
+      _criarObjeto();
+    });
+  }
+
+  void _botaoCirculo() {
+    setState(() {
+      fechar = false;
+      _criarCirculo();
     });
   }
 
@@ -112,16 +138,16 @@ class _MyHomePageState extends State<MyHomePage> {
       body: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
           const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-            _mover(-1, 0);
+            _mover(-3, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowRight): () {
-            _mover(1.0, 0);
+            _mover(3, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowUp): () {
-            _mover(0, 1);
+            _mover(0, -3);
           },
           const SingleActivator(LogicalKeyboardKey.arrowDown): () {
-            _mover(0, -1);
+            _mover(0, 3);
           },
         },
         child: Listener(
@@ -156,7 +182,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: ElevatedButton(
-                        onPressed: _limparObjetoAtual,
+                        onPressed: _botaoObjetoAtual,
                         child: const Icon(Icons.remove),
                         // label: Text('asdasd'),
                       ),
@@ -164,8 +190,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: ElevatedButton(
-                        onPressed: _limparObjetoAtualFechar,
+                        onPressed: _botaoObjetoAtualFechar,
                         child: const Icon(Icons.check_box_outline_blank),
+                        // label: Text('asdasd'),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ElevatedButton(
+                        onPressed: _botaoCirculo,
+                        child: const Icon(Icons.circle),
                         // label: Text('asdasd'),
                       ),
                     ),
@@ -232,7 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       origin: const Offset(-.5, -.5),
                       scale: scale,
                       child: GestureDetector(
-                        onTapUp: _botaoLinha,
+                        onTapUp: _adicionarPontoObjeto,
                         child: CustomPaint(
                           painter:
                               MyPainter(todosObjetos, rastAlg, _rasterizacao),
@@ -269,12 +303,17 @@ class MyPainter extends CustomPainter {
       ..strokeWidth = 3;
 
     // passa desenhando as reta
-    if (rasterizacao == Rasterizacao.dda) {
-      _objetosDDA(canvas, paint);
-    } else {
-      _objetosBresenham(canvas, paint);
+    for (var objeto in todosObjetos) {
+      if (objeto is! Circulo) {
+        if (rasterizacao == Rasterizacao.dda) {
+          _objetosDDA(canvas, paint, objeto);
+        } else {
+          _objetosBresenham(canvas, paint, objeto);
+        }
+      } else {
+        _ciculoBresenham(canvas, paint, objeto);
+      }
     }
-
     // Desenhar os pontos clicados
     for (var point in todosObjetos) {
       for (var element in point.points) {
@@ -288,46 +327,99 @@ class MyPainter extends CustomPainter {
     return true;
   }
 
-  void _objetosDDA(Canvas canvas, Paint paint) {
-    for (var objeto in todosObjetos) {
-      for (var i = 1; i < objeto.points.length; i++) {
-        var novosPontos =
-            _calcularRetaDDA(objeto.points[i - 1], objeto.points[i]);
+  void _objetosDDA(Canvas canvas, Paint paint, Objeto objeto) {
+    for (var i = 1; i < objeto.points.length; i++) {
+      var novosPontos =
+          _calcularRetaDDA(objeto.points[i - 1], objeto.points[i]);
 
-        for (var element in novosPontos) {
-          canvas.drawPoints(PointMode.points, [element], paint);
-        }
+      for (var element in novosPontos) {
+        canvas.drawPoints(PointMode.points, [element], paint);
       }
-      if (objeto.fechar) {
-        var novosPontosFechar =
-            _calcularRetaDDA(objeto.points[0], objeto.points.last);
+    }
+    if (objeto.fechar) {
+      var novosPontosFechar =
+          _calcularRetaDDA(objeto.points[0], objeto.points.last);
 
-        for (var element in novosPontosFechar) {
-          canvas.drawPoints(PointMode.points, [element], paint);
-        }
+      for (var element in novosPontosFechar) {
+        canvas.drawPoints(PointMode.points, [element], paint);
       }
     }
   }
 
-  void _objetosBresenham(Canvas canvas, Paint paint) {
-    for (var objeto in todosObjetos) {
-      for (var i = 1; i < objeto.points.length; i++) {
-        var novosPontos =
-            _calcularRetaBresenham(objeto.points[i - 1], objeto.points[i]);
+  void _objetosBresenham(Canvas canvas, Paint paint, Objeto objeto) {
+    for (var i = 1; i < objeto.points.length; i++) {
+      var novosPontos =
+          _calcularRetaBresenham(objeto.points[i - 1], objeto.points[i]);
 
-        for (var element in novosPontos) {
-          canvas.drawPoints(PointMode.points, [element], paint);
-        }
-      }
-      if (objeto.fechar) {
-        var novosPontosFechar =
-            _calcularRetaBresenham(objeto.points[0], objeto.points.last);
-
-        for (var element in novosPontosFechar) {
-          canvas.drawPoints(PointMode.points, [element], paint);
-        }
+      for (var element in novosPontos) {
+        canvas.drawPoints(PointMode.points, [element], paint);
       }
     }
+    if (objeto.fechar) {
+      var novosPontosFechar =
+          _calcularRetaBresenham(objeto.points[0], objeto.points.last);
+
+      for (var element in novosPontosFechar) {
+        canvas.drawPoints(PointMode.points, [element], paint);
+      }
+    }
+  }
+
+  void _ciculoBresenham(Canvas canvas, Paint paint, Objeto objeto) {
+    if (objeto.points.length == 2) {
+      var novosPontos =
+          _calcularCiculoBresenham(objeto.points[0], objeto.points[1]);
+
+      for (var element in novosPontos) {
+        canvas.drawPoints(PointMode.points, [element], paint);
+      }
+    }
+  }
+
+  List<Offset> _plotCirclePoints(
+    double xc,
+    double yc,
+    double x,
+    double y,
+  ) {
+    final offsets = <Offset>[];
+    offsets.add(Offset(xc + x, yc + y));
+    offsets.add(Offset(xc - x, yc + y));
+    offsets.add(Offset(xc + x, yc - y));
+    offsets.add(Offset(xc - x, yc - y));
+
+    offsets.add(Offset(xc + y, yc + x));
+    offsets.add(Offset(xc - y, yc + x));
+    offsets.add(Offset(xc + y, yc - x));
+    offsets.add(Offset(xc - y, yc - x));
+
+    return offsets;
+  }
+
+  List<Offset> _calcularCiculoBresenham(Offset ponto1, Offset ponto2) {
+    final offsets = <Offset>[];
+
+    final xc = ponto1.dx.roundToDouble(), yc = ponto1.dy.roundToDouble();
+
+    final raio = sqrt(pow((ponto2.dx.roundToDouble() - xc), 2) -
+        pow((ponto2.dy.roundToDouble() - yc), 2));
+
+    var x = 0.0, y = raio.roundToDouble(), p = 3 - 2 * raio;
+
+    offsets.addAll(_plotCirclePoints(xc, yc, x, y));
+
+    while (x < y) {
+      if (p < 0) {
+        p += 4 * x + 6;
+      } else {
+        p += 4 * (x - y) + 10;
+        y--;
+      }
+      x++;
+      offsets.addAll(_plotCirclePoints(xc, yc, x, y));
+    }
+
+    return offsets;
   }
 
   List<Offset> _calcularRetaDDA(Offset ponto1, Offset ponto2) {
@@ -417,6 +509,10 @@ class MyPainter extends CustomPainter {
 
     return offsets;
   }
+}
+
+class Circulo extends Objeto {
+  Circulo(super.fechar);
 }
 
 class Objeto {
