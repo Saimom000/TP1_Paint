@@ -44,12 +44,43 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+class IconItem extends StatelessWidget {
+  final IconData iconItem;
+  final String descricao;
+  final Color cor;
+  final Color corBotao;
+  final Function() funcao;
+
+  const IconItem(
+      this.iconItem, this.descricao, this.cor, this.corBotao, this.funcao,
+      {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Tooltip(
+          message: descricao,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: corBotao),
+            onPressed: funcao,
+            child: Icon(
+              iconItem,
+              color: cor,
+            ),
+          ),
+        ));
+  }
+}
+
 class _MyHomePageState extends State<MyHomePage> {
   Objeto? _objetoAtual;
 
   // final todosObjetos = <Objeto>[];
   List<Objeto> todosObjetos = [];
   var scale = 60.0;
+  static const movimentoTela = 5.0;
+  var pixel = 1.0;
   var rastAlg = false;
   var recoAlg = false;
   var fechar = false;
@@ -61,13 +92,20 @@ class _MyHomePageState extends State<MyHomePage> {
     _criarObjeto();
   }
 
+  Paint _corObjetos() {
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = pixel;
+    return paint;
+  }
+
   void _criarObjeto() {
-    _objetoAtual = Objeto(fechar);
+    _objetoAtual = Objeto(fechar, _corObjetos());
     todosObjetos.add(_objetoAtual!);
   }
 
   void _criarCirculo() {
-    _objetoAtual = Circulo(fechar);
+    _objetoAtual = Circulo(fechar, _corObjetos());
     todosObjetos.add(_objetoAtual!);
   }
 
@@ -78,8 +116,8 @@ class _MyHomePageState extends State<MyHomePage> {
       } else if (_objetoAtual!.points.length < 2) {
         _objetoAtual?.points.add(details.localPosition);
       } else {
-        _objetoAtual = Circulo(fechar);
-        todosObjetos.add(_objetoAtual!);
+        _criarCirculo();
+        _objetoAtual?.points.add(details.localPosition);
       }
     });
   }
@@ -111,6 +149,20 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _voltaPasso() {
+    setState(() {
+      if (_objetoAtual!.points.isNotEmpty) {
+        _objetoAtual!.points.removeLast();
+      } else {
+        todosObjetos.removeLast();
+        if (todosObjetos.isNotEmpty) {
+          _objetoAtual = todosObjetos.last;
+          _objetoAtual!.points.removeLast();
+        }
+      }
+    });
+  }
+
   void _mudarEscala(int i) {
     setState(() {
       scale += i;
@@ -138,16 +190,16 @@ class _MyHomePageState extends State<MyHomePage> {
       body: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
           const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-            _mover(-3, 0);
+            _mover(movimentoTela * -1, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowRight): () {
-            _mover(3, 0);
+            _mover(movimentoTela, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowUp): () {
-            _mover(0, -3);
+            _mover(0, movimentoTela * -1);
           },
           const SingleActivator(LogicalKeyboardKey.arrowDown): () {
-            _mover(0, 3);
+            _mover(0, movimentoTela);
           },
         },
         child: Listener(
@@ -168,41 +220,37 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Wrap(
                   children: [
-                    // IconButton(onPressed: () {}, icon: Icon(Icons.abc)),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red),
-                        onPressed: _limparTodosObjetos,
-                        child: const Icon(Icons.delete),
-                        // label: Text('asdasd'),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ElevatedButton(
-                        onPressed: _botaoObjetoAtual,
-                        child: const Icon(Icons.remove),
-                        // label: Text('asdasd'),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ElevatedButton(
-                        onPressed: _botaoObjetoAtualFechar,
-                        child: const Icon(Icons.check_box_outline_blank),
-                        // label: Text('asdasd'),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ElevatedButton(
-                        onPressed: _botaoCirculo,
-                        child: const Icon(Icons.circle),
-                        // label: Text('asdasd'),
-                      ),
-                    ),
+                    IconItem(Icons.remove, 'Linhas', Colors.white, Colors.blue,
+                        _botaoObjetoAtual),
+
+                    IconItem(Icons.check_box_outline_blank, 'Objeto fechado',
+                        Colors.white, Colors.blue, _botaoObjetoAtualFechar),
+
+                    IconItem(Icons.circle_outlined, 'Circulo', Colors.white,
+                        Colors.blue, _botaoCirculo),
+
+                    IconItem(Icons.arrow_circle_up, 'Aumentar escala',
+                        Colors.white, Colors.blue, _botaoCirculo),
+
+                    IconItem(Icons.arrow_circle_down, 'Diminuir escala',
+                        Colors.white, Colors.blue, _botaoCirculo),
+
+                    IconItem(Icons.auto_mode, 'Desfazer', Colors.white,
+                        Colors.red, _voltaPasso),
+                    // Padding(
+                    //   padding: const EdgeInsets.all(16),
+                    //   child: ElevatedButton(
+                    //     onPressed: _botaoCirculo,
+                    //     child: const Icon(Icons.border_all),
+                    //     // label: Text('asdasd'),
+                    //   ),
+                    // ),
+                    IconItem(Icons.branding_watermark_outlined, 'Criar Janela',
+                        Colors.white, Colors.blue, _botaoCirculo),
+
+                    IconItem(Icons.delete, 'Limpar tudo', Colors.white,
+                        Colors.red, _limparTodosObjetos),
+
                     IntrinsicWidth(
                       child: RadioListTile(
                         title: const Text('DDA'),
@@ -294,10 +342,6 @@ class MyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 1;
-
     final b = Paint()
       ..color = Colors.blue
       ..strokeWidth = 3;
@@ -306,12 +350,12 @@ class MyPainter extends CustomPainter {
     for (var objeto in todosObjetos) {
       if (objeto is! Circulo) {
         if (rasterizacao == Rasterizacao.dda) {
-          _objetosDDA(canvas, paint, objeto);
+          _objetosDDA(canvas, objeto.paint, objeto);
         } else {
-          _objetosBresenham(canvas, paint, objeto);
+          _objetosBresenham(canvas, objeto.paint, objeto);
         }
       } else {
-        _ciculoBresenham(canvas, paint, objeto);
+        _ciculoBresenham(canvas, objeto.paint, objeto);
       }
     }
     // Desenhar os pontos clicados
@@ -491,32 +535,17 @@ class MyPainter extends CustomPainter {
       }
     }
 
-    // final passos = dx.abs() > dy.abs() ? dx.abs() : dy.abs();
-
-    // final xIncr = dx / passos;
-    // final yIncr = dy / passos;
-
-    // var x = ponto2.dx;
-    // var y = ponto2.dy;
-
-    // offsets.add(Offset(x.roundToDouble(), y.roundToDouble()));
-
-    // for (var k = 0; k < passos; k++) {
-    //   x += xIncr;
-    //   y += yIncr;
-    //   offsets.add(Offset(x.roundToDouble(), y.roundToDouble()));
-    // }
-
     return offsets;
   }
 }
 
 class Circulo extends Objeto {
-  Circulo(super.fechar);
+  Circulo(super.fechar, super.paint);
 }
 
 class Objeto {
   final List<Offset> points = [];
   var fechar = false;
-  Objeto(this.fechar);
+  Paint paint;
+  Objeto(this.fechar, this.paint);
 }
