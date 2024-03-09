@@ -1,9 +1,10 @@
-import 'dart:math';
-import 'dart:ui' show Canvas, Clip, Offset, Paint, PointMode, Size;
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'classes.dart';
+import 'enum.dart';
+import 'painter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,18 +26,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-enum Rasterizacao {
-  dda,
-  bresenham,
-}
-
-enum Recorte {
-  sohenSutherland,
-  liangBarsky,
-}
-
-/////////////////////////
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -44,80 +33,86 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class IconItem extends StatelessWidget {
-  final IconData iconItem;
-  final String descricao;
-  final Color cor;
-  final Color corBotao;
-  final Function() funcao;
-
-  const IconItem(
-      this.iconItem, this.descricao, this.cor, this.corBotao, this.funcao,
-      {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Tooltip(
-          message: descricao,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: corBotao),
-            onPressed: funcao,
-            child: Icon(
-              iconItem,
-              color: cor,
-            ),
-          ),
-        ));
-  }
-}
-
 class _MyHomePageState extends State<MyHomePage> {
   Objeto? _objetoAtual;
+  Janela? _janela;
+  List<Objeto> todosObjetos = [];
 
   // final todosObjetos = <Objeto>[];
-  List<Objeto> todosObjetos = [];
-  var scale = 60.0;
   static const movimentoTela = 5.0;
+  var scale = 60.0;
   var pixel = 1.0;
-  var rastAlg = false;
-  var recoAlg = false;
+
   var fechar = false;
 
   var _rasterizacao = Rasterizacao.dda;
   var _recorte = Recorte.sohenSutherland;
+  var _xyEspelhar = EspelharXY.x;
 
   _MyHomePageState() {
-    _criarObjeto();
+    final paint = Paint()
+      ..color = const Color.fromARGB(255, 121, 137, 255)
+      ..strokeWidth = pixel;
+    _objetoAtual = Objeto(fechar, _corObjetos(null));
+    todosObjetos.add(_objetoAtual!);
+    _janela = Janela(true, paint);
   }
 
-  Paint _corObjetos() {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = pixel;
+  Paint _corObjetos(Color? cor) {
+    final paint = Paint();
+    if (cor == null) {
+      paint
+        ..color = Colors.black
+        ..strokeWidth = pixel;
+    } else {
+      paint
+        ..color = cor
+        ..strokeWidth = pixel;
+    }
+
     return paint;
   }
 
   void _criarObjeto() {
-    _objetoAtual = Objeto(fechar, _corObjetos());
+    if (_objetoAtual!.points.isEmpty) {
+      todosObjetos.remove(_objetoAtual);
+    }
+
+    _objetoAtual = Objeto(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
   }
 
   void _criarCirculo() {
-    _objetoAtual = Circulo(fechar, _corObjetos());
+    if (_objetoAtual!.points.isEmpty) {
+      todosObjetos.remove(_objetoAtual);
+    }
+    _objetoAtual = Circulo(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
+  }
+
+  void _adicionarPontoJanela(TapUpDetails details) {
+    _janela!.points.add(details.localPosition);
+    if (_janela!.points.length == 2) {
+      _janela!.points
+          .insert(1, Offset(_janela!.points.last.dx, _janela!.points.first.dy));
+      _janela!.points
+          .add(Offset(_janela!.points.first.dx, _janela!.points.last.dy));
+    }
   }
 
   void _adicionarPontoObjeto(TapUpDetails details) {
     setState(() {
-      if (_objetoAtual is! Circulo) {
-        _objetoAtual?.points.add(details.localPosition);
-      } else if (_objetoAtual!.points.length < 2) {
-        _objetoAtual?.points.add(details.localPosition);
+      if (_janela!.abilitar && _janela!.points.length < 2) {
+        _adicionarPontoJanela(details);
       } else {
-        _criarCirculo();
-        _objetoAtual?.points.add(details.localPosition);
+        if (_objetoAtual is! Circulo) {
+          _objetoAtual?.points.add(details.localPosition);
+        } else if (_objetoAtual!.points.length < 2) {
+          _objetoAtual?.points.add(details.localPosition);
+        } else {
+          _criarCirculo();
+          _objetoAtual?.points.add(details.localPosition);
+        }
       }
     });
   }
@@ -153,11 +148,11 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       if (_objetoAtual!.points.isNotEmpty) {
         _objetoAtual!.points.removeLast();
-      } else {
-        todosObjetos.removeLast();
-        if (todosObjetos.isNotEmpty) {
+      }
+      if (_objetoAtual!.points.isEmpty) {
+        if (todosObjetos.length != 1) {
+          todosObjetos.removeLast();
           _objetoAtual = todosObjetos.last;
-          _objetoAtual!.points.removeLast();
         }
       }
     });
@@ -166,6 +161,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void _mudarEscala(int i) {
     setState(() {
       scale += i;
+    });
+  }
+
+  void _criarJanela() {
+    setState(() {
+      if (_janela!.abilitar) {
+        _janela!.points.clear();
+        _janela!.abilitar = false;
+      } else {
+        _janela!.abilitar = true;
+      }
     });
   }
 
@@ -246,7 +252,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     //   ),
                     // ),
                     IconItem(Icons.branding_watermark_outlined, 'Criar Janela',
-                        Colors.white, Colors.blue, _botaoCirculo),
+                        Colors.white, Colors.blue, _criarJanela),
 
                     IconItem(Icons.delete, 'Limpar tudo', Colors.white,
                         Colors.red, _limparTodosObjetos),
@@ -299,6 +305,42 @@ class _MyHomePageState extends State<MyHomePage> {
                         },
                       ),
                     ),
+                    IntrinsicWidth(
+                      child: RadioListTile(
+                        title: const Text('Espelhar X'),
+                        value: EspelharXY.x,
+                        groupValue: _xyEspelhar,
+                        onChanged: (value) {
+                          setState(() {
+                            _xyEspelhar = value!;
+                          });
+                        },
+                      ),
+                    ),
+                    IntrinsicWidth(
+                      child: RadioListTile(
+                        title: const Text('Espelhar Y'),
+                        value: EspelharXY.y,
+                        groupValue: _xyEspelhar,
+                        onChanged: (value) {
+                          setState(() {
+                            _xyEspelhar = value!;
+                          });
+                        },
+                      ),
+                    ),
+                    IntrinsicWidth(
+                      child: RadioListTile(
+                        title: const Text('Espelhar XY'),
+                        value: EspelharXY.y,
+                        groupValue: _xyEspelhar,
+                        onChanged: (value) {
+                          setState(() {
+                            _xyEspelhar = value!;
+                          });
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 Container(
@@ -316,8 +358,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: GestureDetector(
                         onTapUp: _adicionarPontoObjeto,
                         child: CustomPaint(
-                          painter:
-                              MyPainter(todosObjetos, rastAlg, _rasterizacao),
+                          painter: MyPainter(
+                              todosObjetos, _recorte, _rasterizacao, _janela),
                         ),
                       ),
                     ),
@@ -330,222 +372,4 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-}
-
-class MyPainter extends CustomPainter {
-  // final List<Offset> points;
-  final List<Objeto> todosObjetos;
-  final bool rastAlg;
-  final Rasterizacao rasterizacao;
-
-  MyPainter(this.todosObjetos, this.rastAlg, this.rasterizacao);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final b = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 3;
-
-    // passa desenhando as reta
-    for (var objeto in todosObjetos) {
-      if (objeto is! Circulo) {
-        if (rasterizacao == Rasterizacao.dda) {
-          _objetosDDA(canvas, objeto.paint, objeto);
-        } else {
-          _objetosBresenham(canvas, objeto.paint, objeto);
-        }
-      } else {
-        _ciculoBresenham(canvas, objeto.paint, objeto);
-      }
-    }
-    // Desenhar os pontos clicados
-    for (var point in todosObjetos) {
-      for (var element in point.points) {
-        canvas.drawCircle(element, 0.2, b);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-
-  void _objetosDDA(Canvas canvas, Paint paint, Objeto objeto) {
-    for (var i = 1; i < objeto.points.length; i++) {
-      var novosPontos =
-          _calcularRetaDDA(objeto.points[i - 1], objeto.points[i]);
-
-      for (var element in novosPontos) {
-        canvas.drawPoints(PointMode.points, [element], paint);
-      }
-    }
-    if (objeto.fechar) {
-      var novosPontosFechar =
-          _calcularRetaDDA(objeto.points[0], objeto.points.last);
-
-      for (var element in novosPontosFechar) {
-        canvas.drawPoints(PointMode.points, [element], paint);
-      }
-    }
-  }
-
-  void _objetosBresenham(Canvas canvas, Paint paint, Objeto objeto) {
-    for (var i = 1; i < objeto.points.length; i++) {
-      var novosPontos =
-          _calcularRetaBresenham(objeto.points[i - 1], objeto.points[i]);
-
-      for (var element in novosPontos) {
-        canvas.drawPoints(PointMode.points, [element], paint);
-      }
-    }
-    if (objeto.fechar) {
-      var novosPontosFechar =
-          _calcularRetaBresenham(objeto.points[0], objeto.points.last);
-
-      for (var element in novosPontosFechar) {
-        canvas.drawPoints(PointMode.points, [element], paint);
-      }
-    }
-  }
-
-  void _ciculoBresenham(Canvas canvas, Paint paint, Objeto objeto) {
-    if (objeto.points.length == 2) {
-      var novosPontos =
-          _calcularCiculoBresenham(objeto.points[0], objeto.points[1]);
-
-      for (var element in novosPontos) {
-        canvas.drawPoints(PointMode.points, [element], paint);
-      }
-    }
-  }
-
-  List<Offset> _plotCirclePoints(
-    double xc,
-    double yc,
-    double x,
-    double y,
-  ) {
-    final offsets = <Offset>[];
-    offsets.add(Offset(xc + x, yc + y));
-    offsets.add(Offset(xc - x, yc + y));
-    offsets.add(Offset(xc + x, yc - y));
-    offsets.add(Offset(xc - x, yc - y));
-
-    offsets.add(Offset(xc + y, yc + x));
-    offsets.add(Offset(xc - y, yc + x));
-    offsets.add(Offset(xc + y, yc - x));
-    offsets.add(Offset(xc - y, yc - x));
-
-    return offsets;
-  }
-
-  List<Offset> _calcularCiculoBresenham(Offset ponto1, Offset ponto2) {
-    final offsets = <Offset>[];
-
-    final xc = ponto1.dx.roundToDouble(), yc = ponto1.dy.roundToDouble();
-
-    final raio = sqrt(pow((ponto2.dx.roundToDouble() - xc), 2) -
-        pow((ponto2.dy.roundToDouble() - yc), 2));
-
-    var x = 0.0, y = raio.roundToDouble(), p = 3 - 2 * raio;
-
-    offsets.addAll(_plotCirclePoints(xc, yc, x, y));
-
-    while (x < y) {
-      if (p < 0) {
-        p += 4 * x + 6;
-      } else {
-        p += 4 * (x - y) + 10;
-        y--;
-      }
-      x++;
-      offsets.addAll(_plotCirclePoints(xc, yc, x, y));
-    }
-
-    return offsets;
-  }
-
-  List<Offset> _calcularRetaDDA(Offset ponto1, Offset ponto2) {
-    final offsets = <Offset>[];
-
-    var x = ponto1.dx.roundToDouble();
-    var y = ponto1.dy.roundToDouble();
-
-    final dx = ponto2.dx.roundToDouble() - x;
-    final dy = ponto2.dy.roundToDouble() - y;
-
-    final passos = dx.abs() > dy.abs() ? dx.abs() : dy.abs();
-
-    final xIncr = dx / passos;
-    final yIncr = dy / passos;
-
-    offsets.add(Offset(x, y));
-
-    for (var k = 0; k < passos.roundToDouble(); k++) {
-      x += xIncr;
-      y += yIncr;
-      offsets.add(Offset(x.roundToDouble(), y.roundToDouble()));
-    }
-
-    return offsets;
-  }
-
-  List<Offset> _calcularRetaBresenham(Offset ponto1, Offset ponto2) {
-    final offsets = <Offset>[];
-
-    var x = ponto1.dx.roundToDouble();
-    var y = ponto1.dy.roundToDouble();
-
-    var dx = ponto2.dx.roundToDouble() - x;
-    var dy = ponto2.dy.roundToDouble() - y;
-
-    final xincr = dx > 0 ? 1 : -1;
-    final yincr = dy > 0 ? 1 : -1;
-
-    dx *= xincr;
-    dy *= yincr;
-
-    offsets.add(Offset(x, y));
-    if (dx > dy) {
-      var p = 2 * dy - dx, c1 = 2 * dy, c2 = 2 * (dy - dx);
-
-      for (var i = 0; i < dx; i++) {
-        x += xincr;
-        if (p < 0) {
-          p += c1;
-        } else {
-          p += c2;
-          y += yincr;
-        }
-        offsets.add(Offset(x, y));
-      }
-    } else {
-      var p = 2 * dx - dy, c1 = 2 * dx, c2 = 2 * (dx - dy);
-
-      for (var i = 0; i < dy; i++) {
-        y += yincr;
-        if (p < 0) {
-          p += c1;
-        } else {
-          p += c2;
-          x += xincr;
-        }
-        offsets.add(Offset(x, y));
-      }
-    }
-
-    return offsets;
-  }
-}
-
-class Circulo extends Objeto {
-  Circulo(super.fechar, super.paint);
-}
-
-class Objeto {
-  final List<Offset> points = [];
-  var fechar = false;
-  Paint paint;
-  Objeto(this.fechar, this.paint);
 }
