@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-import 'classes.dart';
+import 'objetos.dart';
 import 'enum.dart';
 import 'painter.dart';
 
@@ -13,7 +16,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
@@ -36,18 +38,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Objeto? _objetoAtual;
   Janela? _janela;
-  List<Objeto> todosObjetos = [];
 
-  // final todosObjetos = <Objeto>[];
+  final todosObjetos = <Objeto>[];
   static const movimentoTela = 5.0;
   var scale = 60.0;
   var pixel = 1.0;
 
+  final _controller1 = TextEditingController()..text = "0";
+  final _controller2 = TextEditingController()..text = "1";
+
+  // Serve para interligar o ultimo pixel do objeto ao primeiro, ou seja, fechar o objeto
   var fechar = false;
 
   var _rasterizacao = Rasterizacao.dda;
   var _recorte = Recorte.sohenSutherland;
-  var _xyEspelhar = EspelharXY.x;
+  final _formKey = GlobalKey<FormState>();
 
   _MyHomePageState() {
     final paint = Paint()
@@ -100,14 +105,18 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // A cade clique na tela um ponto é criado, que passa por esse metodo para adicionar os pontos
   void _adicionarPontoObjeto(TapUpDetails details) {
     setState(() {
+      // Adicionar os pontos clicados a Janela de Recorte
       if (_janela!.abilitar && _janela!.points.length < 2) {
         _adicionarPontoJanela(details);
       } else {
         if (_objetoAtual is! Circulo) {
+          // Um Objeto normal pode ter varios pontos
           _objetoAtual?.points.add(details.localPosition);
         } else if (_objetoAtual!.points.length < 2) {
+          // o Circulo pode ter no maximo 2 pontos
           _objetoAtual?.points.add(details.localPosition);
         } else {
           _criarCirculo();
@@ -123,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _botaoObjetoAtual() {
+  void _botaoObjetoLinha() {
     setState(() {
       fechar = false;
       _criarObjeto();
@@ -144,6 +153,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Volta o ultimo ponto clicado do objeto atual
+  // Caso o objetoAtual fiquei sem pontos, o ultimo
+  // objeto inserido em todosObjetos vira o novo objetoAtual
   void _voltaPasso() {
     setState(() {
       if (_objetoAtual!.points.isNotEmpty) {
@@ -158,7 +170,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _mudarEscala(int i) {
+  void _mudarZoom(int i) {
     setState(() {
       scale += i;
     });
@@ -167,14 +179,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void _criarJanela() {
     setState(() {
       if (_janela!.abilitar) {
+        // Desabilita a janela para ser mostrada e limpa os seus ponto
         _janela!.points.clear();
         _janela!.abilitar = false;
       } else {
+        // Habilita a janela para selecionar os 2 pontos
         _janela!.abilitar = true;
       }
     });
   }
 
+  // Move todos os objetos da tela
   void _mover(double x, double y) {
     setState(() {
       for (var objeto in todosObjetos) {
@@ -185,16 +200,123 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Espelha um Objeto no eixo Y
+  void _botaoEspelharObjetoY() {
+    if (_objetoAtual!.points.length > 1) {
+      setState(() {
+        if (_objetoAtual is! Circulo) {
+          final offsets = <Offset>[];
+
+          var (mim, max) = _objetoAtual!.retornaExtremos();
+
+          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
+
+          for (var point in _objetoAtual!.points) {
+            offsets.add(Offset((-1 * (point.dx - xmedia)) + xmedia, point.dy));
+          }
+
+          _objetoAtual!.points.clear();
+          _objetoAtual!.points.addAll(offsets);
+        }
+      });
+    }
+  }
+
+  // Espelha um Objeto no eixo X
+  void _botaoEspelharObjetoX() {
+    if (_objetoAtual!.points.length > 1) {
+      setState(() {
+        if (_objetoAtual is! Circulo) {
+          final offsets = <Offset>[];
+
+          var (mim, max) = _objetoAtual!.retornaExtremos();
+
+          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+
+          for (var point in _objetoAtual!.points) {
+            offsets.add(Offset(point.dx, (-1 * (point.dy - ymedia) + ymedia)));
+          }
+
+          _objetoAtual!.points.clear();
+          _objetoAtual!.points.addAll(offsets);
+        }
+      });
+    }
+  }
+
+  // Muda a escala somente do objeto atual
+  void _mudarEscalaObjeto(double escala) {
+    if (_objetoAtual!.points.length > 1 && escala != 1) {
+      setState(() {
+        if (_objetoAtual is! Circulo) {
+          final offsets = <Offset>[];
+
+          var (mim, max) = _objetoAtual!.retornaExtremos();
+
+          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
+          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+
+          for (var point in _objetoAtual!.points) {
+            offsets.add(Offset((point.dx - xmedia) * escala + xmedia,
+                (point.dy - ymedia) * escala + ymedia));
+          }
+
+          _objetoAtual!.points.clear();
+          _objetoAtual!.points.addAll(offsets);
+        } else {
+          _objetoAtual!.points.add(Offset(_objetoAtual!.points.last.dx * escala,
+              _objetoAtual!.points.last.dy * escala));
+          _objetoAtual!.points.removeAt(1);
+        }
+      });
+    }
+  }
+
+  // Girar somente o objeto atual
+  void _mudarGrauObjeto(int graus) {
+    if (_objetoAtual!.points.length > 1 && graus > 0) {
+      if (_objetoAtual is! Circulo) {
+        setState(() {
+          final offsets = <Offset>[];
+
+          var (mim, max) = _objetoAtual!.retornaExtremos();
+
+          // Representa um ponto central no objeto
+          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
+          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+          var grausDouble = graus * (math.pi / 180);
+
+          for (var point in _objetoAtual!.points) {
+            final p1 = (point.dx - xmedia);
+            final p2 = (point.dy - ymedia);
+            final sin = math.sin(grausDouble);
+            final cos = math.cos(grausDouble);
+
+            offsets.add(
+              Offset(
+                p1 * cos - p2 * sin + xmedia,
+                p1 * sin + p2 * cos + ymedia,
+              ),
+            );
+          }
+
+          _objetoAtual!.points.clear();
+          _objetoAtual!.points.addAll(offsets);
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('É o desenhas'),
-        // titleSpacing: ,
       ),
       body: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
+          // Utilizar as setinhas do teclado para mover todos os objetos da tela
           const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
             _mover(movimentoTela * -1, 0);
           },
@@ -209,163 +331,197 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         },
         child: Listener(
-          behavior: HitTestBehavior.translucent, //talvez
+          behavior: HitTestBehavior.translucent,
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
               if (pointerSignal.scrollDelta.dy > 0) {
-                _mudarEscala(-2);
+                _mudarZoom(-2);
               } else if (pointerSignal.scrollDelta.dy < 0) {
-                _mudarEscala(2);
+                _mudarZoom(2);
               }
             }
           },
           child: Focus(
             autofocus: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  children: [
-                    IconItem(Icons.remove, 'Linhas', Colors.white, Colors.blue,
-                        _botaoObjetoAtual),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        IconItem(Icons.remove, 'Linhas', Colors.white,
+                            Colors.blue, _botaoObjetoLinha),
+                        IconItem(
+                            Icons.check_box_outline_blank,
+                            'Objeto fechado',
+                            Colors.white,
+                            Colors.blue,
+                            _botaoObjetoAtualFechar),
+                        IconItem(Icons.circle_outlined, 'Circulo', Colors.white,
+                            Colors.blue, _botaoCirculo),
+                        IconItem(Icons.auto_mode, 'Desfazer', Colors.white,
+                            Colors.red, _voltaPasso),
+                        IconItem(Icons.delete, 'Limpar tudo', Colors.white,
+                            Colors.red, _limparTodosObjetos),
+                        IntrinsicWidth(
+                          child: RadioListTile(
+                            title: const Text('DDA'),
+                            value: Rasterizacao.dda,
+                            groupValue: _rasterizacao,
+                            onChanged: (value) {
+                              setState(() {
+                                _rasterizacao = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        IntrinsicWidth(
+                          child: RadioListTile(
+                            title: const Text('Bresenham'),
+                            value: Rasterizacao.bresenham,
+                            groupValue: _rasterizacao,
+                            onChanged: (value) {
+                              setState(() {
+                                _rasterizacao = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        IconItem(
+                            Icons.branding_watermark_outlined,
+                            'Criar Janela de Recorte',
+                            Colors.white,
+                            Colors.blue,
+                            _criarJanela),
+                        IntrinsicWidth(
+                          child: RadioListTile(
+                            title: const Text('Cohen-Sutherland'),
+                            value: Recorte.sohenSutherland,
+                            groupValue: _recorte,
+                            onChanged: (value) {
+                              setState(() {
+                                _recorte = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        IntrinsicWidth(
+                          child: RadioListTile(
+                            title: const Text('Liang-Barsky'),
+                            value: Recorte.liangBarsky,
+                            groupValue: _recorte,
+                            onChanged: (value) {
+                              setState(() {
+                                _recorte = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        IconItem(Icons.flip, 'Espelhar Y', Colors.white,
+                            Colors.blue, _botaoEspelharObjetoY),
+                        IconItem(MdiIcons.flipVertical, 'Espelhar X',
+                            Colors.white, Colors.blue, _botaoEspelharObjetoX),
+                        SizedBox(
+                          width: 100,
+                          child: TextFormField(
+                              obscureText: false,
+                              controller: _controller1,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                labelText: 'Graus',
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              onFieldSubmitted: (value) {
+                                _formKey.currentState?.validate();
+                              },
+                              validator: (value) {
+                                value ??= "0";
+                                if (value.isEmpty) {
+                                  return 'Main darius.';
+                                }
 
-                    IconItem(Icons.check_box_outline_blank, 'Objeto fechado',
-                        Colors.white, Colors.blue, _botaoObjetoAtualFechar),
+                                final a = int.parse(value);
 
-                    IconItem(Icons.circle_outlined, 'Circulo', Colors.white,
-                        Colors.blue, _botaoCirculo),
+                                if (a < 0 || a > 360) {
+                                  _controller1.text = '0';
+                                  return 'Main darius.';
+                                }
+                                _mudarGrauObjeto(a);
+                                _controller1.text = '0';
+                                return null;
+                              }),
+                        ),
+                        SizedBox(
+                          width: 100,
+                          child: TextFormField(
+                            obscureText: false,
+                            controller: _controller2,
+                            // onSubmitted: _mudarEscalaObjeto,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: 'Escala Objeto',
+                            ),
+                            keyboardType: TextInputType.number,
 
-                    IconItem(Icons.arrow_circle_up, 'Aumentar escala',
-                        Colors.white, Colors.blue, _botaoCirculo),
+                            onFieldSubmitted: (value) {
+                              _formKey.currentState?.validate();
+                            },
+                            validator: (value) {
+                              value ??= "1";
+                              if (value.isEmpty) {
+                                _controller2.text = '1';
+                                return 'Main darius.';
+                              }
+                              final a = double.tryParse(value);
 
-                    IconItem(Icons.arrow_circle_down, 'Diminuir escala',
-                        Colors.white, Colors.blue, _botaoCirculo),
-
-                    IconItem(Icons.auto_mode, 'Desfazer', Colors.white,
-                        Colors.red, _voltaPasso),
-                    // Padding(
-                    //   padding: const EdgeInsets.all(16),
-                    //   child: ElevatedButton(
-                    //     onPressed: _botaoCirculo,
-                    //     child: const Icon(Icons.border_all),
-                    //     // label: Text('asdasd'),
-                    //   ),
-                    // ),
-                    IconItem(Icons.branding_watermark_outlined, 'Criar Janela',
-                        Colors.white, Colors.blue, _criarJanela),
-
-                    IconItem(Icons.delete, 'Limpar tudo', Colors.white,
-                        Colors.red, _limparTodosObjetos),
-
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('DDA'),
-                        value: Rasterizacao.dda,
-                        groupValue: _rasterizacao,
-                        onChanged: (value) {
-                          setState(() {
-                            _rasterizacao = value!;
-                          });
-                        },
-                      ),
+                              if (a == null || a <= 0) {
+                                _controller2.text = '1';
+                                return 'Main darius.';
+                              }
+                              _mudarEscalaObjeto(a);
+                              _controller2.text = '1';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Bresenham'),
-                        value: Rasterizacao.bresenham,
-                        groupValue: _rasterizacao,
-                        onChanged: (value) {
-                          setState(() {
-                            _rasterizacao = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Cohen-Sutherland'),
-                        value: Recorte.sohenSutherland,
-                        groupValue: _recorte,
-                        onChanged: (value) {
-                          setState(() {
-                            _recorte = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Liang-Barsky'),
-                        value: Recorte.liangBarsky,
-                        groupValue: _recorte,
-                        onChanged: (value) {
-                          setState(() {
-                            _recorte = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Espelhar X'),
-                        value: EspelharXY.x,
-                        groupValue: _xyEspelhar,
-                        onChanged: (value) {
-                          setState(() {
-                            _xyEspelhar = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Espelhar Y'),
-                        value: EspelharXY.y,
-                        groupValue: _xyEspelhar,
-                        onChanged: (value) {
-                          setState(() {
-                            _xyEspelhar = value!;
-                          });
-                        },
-                      ),
-                    ),
-                    IntrinsicWidth(
-                      child: RadioListTile(
-                        title: const Text('Espelhar XY'),
-                        value: EspelharXY.y,
-                        groupValue: _xyEspelhar,
-                        onChanged: (value) {
-                          setState(() {
-                            _xyEspelhar = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  color: Colors.red,
-                  child: const Text('darius'),
-                ),
-                Expanded(
-                  child: Container(
-                    clipBehavior: Clip.antiAlias,
-                    decoration: const BoxDecoration(),
-                    child: Transform.scale(
-                      alignment: Alignment.topLeft,
-                      origin: const Offset(-.5, -.5),
-                      scale: scale,
-                      child: GestureDetector(
-                        onTapUp: _adicionarPontoObjeto,
-                        child: CustomPaint(
-                          painter: MyPainter(
-                              todosObjetos, _recorte, _rasterizacao, _janela),
+                  ),
+                  Container(
+                    color: Colors.red,
+                    child: const Text('darius'),
+                  ),
+                  Expanded(
+                    child: Container(
+                      clipBehavior: Clip.antiAlias,
+                      decoration: const BoxDecoration(),
+                      child: InteractiveViewer(
+                        minScale: 0.1,
+                        maxScale: 100,
+                        alignment: Alignment.topLeft,
+                        // origin: const Offset(-.5, -.5),
+                        // scale: scale,
+                        child: GestureDetector(
+                          onTapUp: _adicionarPontoObjeto,
+                          child: CustomPaint(
+                            painter: MyPainter(
+                                todosObjetos, _recorte, _rasterizacao, _janela),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
