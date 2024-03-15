@@ -19,4 +19,4 @@
 
 ## Getting Started
 
-[Executavel](https://github.com/Saimom000/TP1_Paint/releases/tag/v1.0.0)
+[Executavel](https://github.com/Saimom000/TP1_Paint/releases/)
