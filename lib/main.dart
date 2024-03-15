@@ -41,7 +41,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final todosObjetos = <Objeto>[];
   static const movimentoTela = 5.0;
-  var scale = 60.0;
   var pixel = 1.0;
 
   final _controller1 = TextEditingController()..text = "0";
@@ -61,6 +60,21 @@ class _MyHomePageState extends State<MyHomePage> {
     _objetoAtual = Objeto(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
     _janela = Janela(true, paint);
+  }
+
+  final viewTransformationController = TransformationController();
+
+  @override
+  void initState() {
+    const zoomFactor = 50.0;
+    const xTranslate = 300.0;
+    const yTranslate = 300.0;
+    viewTransformationController.value.setEntry(0, 0, zoomFactor);
+    viewTransformationController.value.setEntry(1, 1, zoomFactor);
+    viewTransformationController.value.setEntry(2, 2, zoomFactor);
+    viewTransformationController.value.setEntry(0, 3, -xTranslate);
+    viewTransformationController.value.setEntry(1, 3, -yTranslate);
+    super.initState();
   }
 
   Paint _corObjetos(Color? cor) {
@@ -167,12 +181,6 @@ class _MyHomePageState extends State<MyHomePage> {
           _objetoAtual = todosObjetos.last;
         }
       }
-    });
-  }
-
-  void _mudarZoom(int i) {
-    setState(() {
-      scale += i;
     });
   }
 
@@ -332,15 +340,15 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         child: Listener(
           behavior: HitTestBehavior.translucent,
-          onPointerSignal: (pointerSignal) {
-            if (pointerSignal is PointerScrollEvent) {
-              if (pointerSignal.scrollDelta.dy > 0) {
-                _mudarZoom(-2);
-              } else if (pointerSignal.scrollDelta.dy < 0) {
-                _mudarZoom(2);
-              }
-            }
-          },
+          // onPointerSignal: (pointerSignal) {
+          //   // if (pointerSignal is PointerScrollEvent) {
+          //   //   if (pointerSignal.scrollDelta.dy > 0) {
+          //   //     _mudarZoom(-2);
+          //   //   } else if (pointerSignal.scrollDelta.dy < 0) {
+          //   //     _mudarZoom(2);
+          //   //   }
+          //   // }
+          // },
           child: Focus(
             autofocus: true,
             child: Form(
@@ -505,10 +513,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       clipBehavior: Clip.antiAlias,
                       decoration: const BoxDecoration(),
                       child: InteractiveViewer(
+                        transformationController: viewTransformationController,
                         minScale: 0.1,
                         maxScale: 100,
-                        alignment: Alignment.topLeft,
-                        // origin: const Offset(-.5, -.5),
+                        // alignment: Alignment.center,
                         // scale: scale,
                         child: GestureDetector(
                           onTapUp: _adicionarPontoObjeto,
