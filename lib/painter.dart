@@ -442,23 +442,28 @@ class MyPainter extends CustomPainter {
 
   (double, double, double, double) minMaxJanela() {
     final xmin = min(
-      janela!.points.first.dx.roundToDouble(),
-      janela!.points.elementAt(2).dx.roundToDouble(),
+      janela!.points.first.dx,
+      janela!.points.elementAt(2).dx,
     );
     final xmax = max(
-      janela!.points.first.dx.roundToDouble(),
-      janela!.points.elementAt(2).dx.roundToDouble(),
+      janela!.points.first.dx,
+      janela!.points.elementAt(2).dx,
     );
     final ymin = min(
-      janela!.points.first.dy.roundToDouble(),
-      janela!.points.elementAt(2).dy.roundToDouble(),
+      janela!.points.first.dy,
+      janela!.points.elementAt(2).dy,
     );
     final ymax = max(
-      janela!.points.first.dy.roundToDouble(),
-      janela!.points.elementAt(2).dy.roundToDouble(),
+      janela!.points.first.dy,
+      janela!.points.elementAt(2).dy,
     );
 
-    return (xmin, xmax, ymin, ymax);
+    return (
+      xmin.roundToDouble(),
+      xmax.roundToDouble(),
+      ymin.roundToDouble(),
+      ymax.roundToDouble(),
+    );
   }
 
   void cohenSutherlandObjeto(

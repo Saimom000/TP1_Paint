@@ -35,7 +35,16 @@ class Objeto {
           ymax = point.dy;
         }
       }
-      return (Offset(xmim, ymim), Offset(xmax, ymax));
+      return (
+        Offset(
+          xmim.roundToDouble(),
+          ymim.roundToDouble(),
+        ),
+        Offset(
+          xmax.roundToDouble(),
+          ymax.roundToDouble(),
+        )
+      );
     }
     return (const Offset(0, 0), const Offset(0, 0));
   }
