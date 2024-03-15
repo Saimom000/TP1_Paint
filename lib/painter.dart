@@ -39,9 +39,6 @@ class MyPainter extends CustomPainter {
         recorteJanela(canvas, objeto);
       }
 
-      // for (var element in janela!.points) {
-      //   canvas.drawCircle(element, 0.2, b);
-      // }
       for (var point in todosObjetos) {
         for (var element in point.points) {
           canvas.drawCircle(element, 0.2, corObjetosPontos);
@@ -339,7 +336,7 @@ class MyPainter extends CustomPainter {
     double u2,
   ) {
     var result = true;
-    var r = q / p;
+    final r = q / p;
 
     if (p < 0) {
       //fora para dentro
@@ -368,34 +365,35 @@ class MyPainter extends CustomPainter {
     Canvas canvas,
     Objeto objeto,
   ) {
-    final objetoJanela = Objeto(false, objeto.paint);
-
     final (xmin, xmax, ymin, ymax) = minMaxJanela();
     for (var i = 1; i < objeto.points.length; i++) {
-      objetoJanela.points.addAll(
-        liangBarsky(
-          objeto.points.elementAt(i - 1),
-          objeto.points.elementAt(i),
-          xmin,
-          xmax,
-          ymin,
-          ymax,
-        ),
-      );
+      final objetoJanela = Objeto(false, objeto.paint)
+        ..points.addAll(
+          liangBarsky(
+            objeto.points.elementAt(i - 1),
+            objeto.points.elementAt(i),
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+          ),
+        );
+      desenhaObjeto(canvas, objetoJanela);
     }
     if (objeto.fechar) {
-      objetoJanela.points.addAll(
-        liangBarsky(
-          objeto.points.last,
-          objeto.points.first,
-          xmin,
-          xmax,
-          ymin,
-          ymax,
-        ),
-      );
+      final objetoJanela = Objeto(false, objeto.paint)
+        ..points.addAll(
+          liangBarsky(
+            objeto.points.last,
+            objeto.points.first,
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+          ),
+        );
+      desenhaObjeto(canvas, objetoJanela);
     }
-    desenhaObjeto(canvas, objetoJanela);
   }
 
   List<Offset> liangBarsky(
@@ -423,16 +421,18 @@ class MyPainter extends CustomPainter {
         (verificar, u1, u2) = clipSet(-1 * dy, y1 - ymin, u1, u2);
         if (verificar) {
           (verificar, u1, u2) = clipSet(dy, ymax - y1, u1, u2);
-          if (u2 < 1.0) {
-            x2 = x1 + u2 * dx;
-            y2 = y1 + u2 * dy;
+          if (verificar) {
+            if (u2 < 1.0) {
+              x2 = x1 + u2 * dx;
+              y2 = y1 + u2 * dy;
+            }
+            if (u1 > 0) {
+              x1 = x1 + u1 * dx;
+              y1 = y1 + u1 * dy;
+            }
+            offsets.add(Offset(x1.roundToDouble(), y1.roundToDouble()));
+            offsets.add(Offset(x2.roundToDouble(), y2.roundToDouble()));
           }
-          if (u1 > 0) {
-            x1 = x1 + u1 * dx;
-            y1 = y1 + u1 * dy;
-          }
-          offsets.add(Offset(x1.roundToDouble(), y1.roundToDouble()));
-          offsets.add(Offset(x2.roundToDouble(), y2.roundToDouble()));
         }
       }
     }
@@ -470,35 +470,36 @@ class MyPainter extends CustomPainter {
     Canvas canvas,
     Objeto objeto,
   ) {
-    final objetoJanela = Objeto(false, objeto.paint);
-
     final (xmin, xmax, ymin, ymax) = minMaxJanela();
 
     for (var i = 1; i < objeto.points.length; i++) {
-      objetoJanela.points.addAll(
-        cohenSutherland(
-          objeto.points.elementAt(i - 1),
-          objeto.points.elementAt(i),
-          xmin,
-          xmax,
-          ymin,
-          ymax,
-        ),
-      );
+      final objetoJanela = Objeto(false, objeto.paint)
+        ..points.addAll(
+          cohenSutherland(
+            objeto.points.elementAt(i - 1),
+            objeto.points.elementAt(i),
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+          ),
+        );
+      desenhaObjeto(canvas, objetoJanela);
     }
     if (objeto.fechar) {
-      objetoJanela.points.addAll(
-        cohenSutherland(
-          objeto.points.last,
-          objeto.points.first,
-          xmin,
-          xmax,
-          ymin,
-          ymax,
-        ),
-      );
+      final objetoJanela = Objeto(false, objeto.paint)
+        ..points.addAll(
+          cohenSutherland(
+            objeto.points.last,
+            objeto.points.first,
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+          ),
+        );
+      desenhaObjeto(canvas, objetoJanela);
     }
-    desenhaObjeto(canvas, objetoJanela);
   }
 
   List<Offset> cohenSutherland(
