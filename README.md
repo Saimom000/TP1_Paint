@@ -1,16 +1,22 @@
-# flutter_application_1
+# Trabalho Pratico 1 - Computação Gráfica
 
-A new Flutter project.
+- Transformações geométricas 2D:
+  - Translação
+  - Rotação
+  - Escala
+  - Reflexões **X/Y/XY**
+- Rasterização:
+  - Retas:
+    - DDA
+    - Bresenham
+  - Circunferência:
+    - Bresenham
+- Recorte:
+  - Regiões codificadas:
+    - Cohen-Sutherland
+  - Equação paramétrica:
+    - Liang-Barsky
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Executavel [Caminho](https://github.com/Saimom000/TP1_Paint/releases/tag/v1.0.0)
