@@ -217,10 +217,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
-          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
+          var xmedia = (mim.dx + max.dx) / 2;
 
           for (var point in _objetoAtual!.points) {
-            offsets.add(Offset((-1 * (point.dx - xmedia)) + xmedia, point.dy));
+            offsets.add(Offset(-(point.dx - xmedia) + xmedia, point.dy));
           }
 
           _objetoAtual!.points.clear();
@@ -239,10 +239,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
-          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+          var ymedia = (mim.dy + max.dy) / 2;
 
           for (var point in _objetoAtual!.points) {
-            offsets.add(Offset(point.dx, (-1 * (point.dy - ymedia) + ymedia)));
+            offsets.add(Offset(point.dx, -(point.dy - ymedia) + ymedia));
           }
 
           _objetoAtual!.points.clear();
@@ -261,8 +261,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
-          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
-          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+          var xmedia = (mim.dx + max.dx) / 2;
+          var ymedia = (mim.dy + max.dy) / 2;
 
           for (var point in _objetoAtual!.points) {
             offsets.add(Offset((point.dx - xmedia) * escala + xmedia,
@@ -290,8 +290,8 @@ class _MyHomePageState extends State<MyHomePage> {
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
           // Representa um ponto central no objeto
-          var xmedia = ((mim.dx + max.dx) / 2).roundToDouble();
-          var ymedia = ((mim.dy + max.dy) / 2).roundToDouble();
+          var xmedia = (mim.dx + max.dx) / 2;
+          var ymedia = (mim.dy + max.dy) / 2;
           var grausDouble = graus * (math.pi / 180);
 
           for (var point in _objetoAtual!.points) {
@@ -326,13 +326,13 @@ class _MyHomePageState extends State<MyHomePage> {
         bindings: <ShortcutActivator, VoidCallback>{
           // Utilizar as setinhas do teclado para mover todos os objetos da tela
           const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-            _mover(movimentoTela * -1, 0);
+            _mover(-movimentoTela, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowRight): () {
             _mover(movimentoTela, 0);
           },
           const SingleActivator(LogicalKeyboardKey.arrowUp): () {
-            _mover(0, movimentoTela * -1);
+            _mover(0, -movimentoTela);
           },
           const SingleActivator(LogicalKeyboardKey.arrowDown): () {
             _mover(0, movimentoTela);

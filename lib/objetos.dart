@@ -37,12 +37,12 @@ class Objeto {
       }
       return (
         Offset(
-          xmim.roundToDouble(),
-          ymim.roundToDouble(),
+          xmim,
+          ymim,
         ),
         Offset(
-          xmax.roundToDouble(),
-          ymax.roundToDouble(),
+          xmax,
+          ymax,
         )
       );
     }
