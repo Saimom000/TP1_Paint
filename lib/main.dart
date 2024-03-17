@@ -77,6 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
   }
 
+  // A cor padão dos objetos é preta
   Paint _corObjetos(Color? cor) {
     final paint = Paint();
     if (cor == null) {
@@ -96,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_objetoAtual!.points.isEmpty) {
       todosObjetos.remove(_objetoAtual);
     }
-
+    // O fechar indica se o objeto deve ligar o ultimo ponto ao primeiro ponto
     _objetoAtual = Objeto(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
   }
@@ -111,6 +112,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _adicionarPontoJanela(TapUpDetails details) {
     _janela!.points.add(details.localPosition);
+    // Para criar a janela so é necessario 2 pontos,
+    // os outros 2 pontos para fechar o retangulo são criados automaticamente.
     if (_janela!.points.length == 2) {
       _janela!.points
           .insert(1, Offset(_janela!.points.last.dx, _janela!.points.first.dy));
@@ -119,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // A cade clique na tela um ponto é criado, que passa por esse metodo para adicionar os pontos
+  // A cade clique na tela um ponto é criado, que passa por esse metodo para adicionar os pontos.
   void _adicionarPontoObjeto(TapUpDetails details) {
     setState(() {
       // Adicionar os pontos clicados a Janela de Recorte
@@ -127,10 +130,10 @@ class _MyHomePageState extends State<MyHomePage> {
         _adicionarPontoJanela(details);
       } else {
         if (_objetoAtual is! Circulo) {
-          // Um Objeto normal pode ter varios pontos
+          // Um Objeto normal pode ter varios pontos.
           _objetoAtual?.points.add(details.localPosition);
         } else if (_objetoAtual!.points.length < 2) {
-          // o Circulo pode ter no maximo 2 pontos
+          // o Circulo pode ter no maximo 2 pontos.
           _objetoAtual?.points.add(details.localPosition);
         } else {
           _criarCirculo();
@@ -146,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Botão para criar objeto so com linhas.
   void _botaoObjetoLinha() {
     setState(() {
       fechar = false;
@@ -153,6 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Botão para criar objeto que liga o ultimo ponto ao primeiro ponto.
   void _botaoObjetoAtualFechar() {
     setState(() {
       fechar = true;
@@ -160,6 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Botão para criar objeto do tipo circulo.
   void _botaoCirculo() {
     setState(() {
       fechar = false;
@@ -167,9 +173,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Volta o ultimo ponto clicado do objeto atual
+  // Volta o ultimo ponto clicado do objeto atual.
   // Caso o objetoAtual fiquei sem pontos, o ultimo
-  // objeto inserido em todosObjetos vira o novo objetoAtual
+  // objeto inserido em todosObjetos vira o novo objetoAtual.
   void _voltaPasso() {
     setState(() {
       if (_objetoAtual!.points.isNotEmpty) {
@@ -187,17 +193,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void _criarJanela() {
     setState(() {
       if (_janela!.abilitar) {
-        // Desabilita a janela para ser mostrada e limpa os seus ponto
+        // Desabilita a janela para ser mostrada e limpa os seus ponto.
         _janela!.points.clear();
         _janela!.abilitar = false;
       } else {
-        // Habilita a janela para selecionar os 2 pontos
+        // Habilita a janela para selecionar os 2 pontos.
         _janela!.abilitar = true;
       }
     });
   }
 
-  // Move todos os objetos da tela
+  // Move todos os objetos da tela.
   void _mover(double x, double y) {
     setState(() {
       for (var objeto in todosObjetos) {
@@ -208,30 +214,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Espelha um Objeto no eixo Y
+  // Espelha um Objeto no eixo Y.
   void _botaoEspelharObjetoY() {
-    if (_objetoAtual!.points.length > 1) {
-      setState(() {
-        if (_objetoAtual is! Circulo) {
-          final offsets = <Offset>[];
-
-          var (mim, max) = _objetoAtual!.retornaExtremos();
-
-          var xmedia = (mim.dx + max.dx) / 2;
-
-          for (var point in _objetoAtual!.points) {
-            offsets.add(Offset(-(point.dx - xmedia) + xmedia, point.dy));
-          }
-
-          _objetoAtual!.points.clear();
-          _objetoAtual!.points.addAll(offsets);
-        }
-      });
-    }
+    _espelharObjeto(true);
   }
 
-  // Espelha um Objeto no eixo X
+  // Espelha um Objeto no eixo X.
   void _botaoEspelharObjetoX() {
+    _espelharObjeto(false);
+  }
+
+  // Espelhar o objetoAtual no eixo y ou x.
+  void _espelharObjeto(bool eixoY) {
     if (_objetoAtual!.points.length > 1) {
       setState(() {
         if (_objetoAtual is! Circulo) {
@@ -239,10 +233,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
-          var ymedia = (mim.dy + max.dy) / 2;
+          if (eixoY) {
+            var xmedia = (mim.dx + max.dx) / 2;
 
-          for (var point in _objetoAtual!.points) {
-            offsets.add(Offset(point.dx, -(point.dy - ymedia) + ymedia));
+            for (var point in _objetoAtual!.points) {
+              offsets.add(Offset(-(point.dx - xmedia) + xmedia, point.dy));
+            }
+          } else {
+            var ymedia = (mim.dy + max.dy) / 2;
+
+            for (var point in _objetoAtual!.points) {
+              offsets.add(Offset(point.dx, -(point.dy - ymedia) + ymedia));
+            }
           }
 
           _objetoAtual!.points.clear();

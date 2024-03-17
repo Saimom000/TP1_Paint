@@ -29,22 +29,25 @@ class MyPainter extends CustomPainter {
       ..color = Colors.blue
       ..strokeWidth = 3;
 
-    // Caso a janela não esteja feita, ou abilitada, todos os objetos são coloridos no Canvas
+    // Caso a janela não esteja completa, ou abilitada, todos os objetos são coloridos no Canvas
     if (janela!.abilitar == false || janela!.points.length < 2) {
-      desenharTodosObjetos(canvas, corObjetosPontos);
+      desenharTodosObjetos(canvas);
     } else {
+      // Desenha a janela de recorte
       desenhaObjeto(canvas, janela!);
 
       for (var objeto in todosObjetos) {
         recorteJanela(canvas, objeto);
       }
+    }
 
-      for (var point in todosObjetos) {
-        for (var element in point.points) {
-          canvas.drawCircle(element, 0.2, corObjetosPontos);
-        }
+    // Desenhar os pontos clicados
+    for (var objeto in todosObjetos) {
+      for (var element in objeto.points) {
+        canvas.drawCircle(element, 0.2, corObjetosPontos);
       }
     }
+    // Desenhar os pontos clicados da janela de recorte
     if (janela!.abilitar == true) {
       for (var element in janela!.points) {
         canvas.drawCircle(element, 0.2, corJanelaPontos);
@@ -78,16 +81,9 @@ class MyPainter extends CustomPainter {
 
   void desenharTodosObjetos(
     Canvas canvas,
-    Paint b,
   ) {
     for (var objeto in todosObjetos) {
       desenhaObjeto(canvas, objeto);
-    }
-    // Desenhar os pontos clicados
-    for (var point in todosObjetos) {
-      for (var element in point.points) {
-        canvas.drawCircle(element, 0.2, b);
-      }
     }
   }
 
@@ -314,6 +310,7 @@ class MyPainter extends CustomPainter {
     return codigo;
   }
 
+  // Algoritimos de recorte
   void recorteJanela(
     Canvas canvas,
     Objeto objeto,
@@ -440,6 +437,9 @@ class MyPainter extends CustomPainter {
     return offsets;
   }
 
+  // Saber as dimensoes maximas e minimas da janela de recorte.
+  // Somente os pontos clicados são utilizados para descobrir os valores,
+  // pois as outras 2 pontas são criados em consequencia deles.
   (double, double, double, double) minMaxJanela() {
     final xmin = min(
       janela!.points.first.dx,
