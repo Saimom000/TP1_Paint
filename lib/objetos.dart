@@ -15,6 +15,7 @@ class Objeto {
   Paint paint;
   Objeto(this.fechar, this.paint);
 
+  // Retorna o maior x e y, e o menor x e y de toda a lista
   (Offset, Offset) retornaExtremos() {
     if (points.isNotEmpty) {
       var xmim = points.first.dx;

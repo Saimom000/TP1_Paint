@@ -48,7 +48,7 @@ class MyPainter extends CustomPainter {
       }
     }
     // Desenhar os pontos clicados da janela de recorte
-    if (janela!.abilitar == true) {
+    if (janela!.abilitar) {
       for (var element in janela!.points) {
         canvas.drawCircle(element, 0.2, corJanelaPontos);
       }

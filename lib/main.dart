@@ -41,7 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final todosObjetos = <Objeto>[];
   static const movimentoTela = 5.0;
-  var pixel = 1.0;
+  static const tamanhoPixel = 1.0;
 
   final _controller1 = TextEditingController()..text = "0";
   final _controller2 = TextEditingController()..text = "1";
@@ -56,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState() {
     final paint = Paint()
       ..color = const Color.fromARGB(255, 121, 137, 255)
-      ..strokeWidth = pixel;
+      ..strokeWidth = tamanhoPixel;
     _objetoAtual = Objeto(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
     _janela = Janela(true, paint);
@@ -64,6 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final viewTransformationController = TransformationController();
 
+  // Definir ponto inicial de zoom
   @override
   void initState() {
     const zoomFactor = 50.0;
@@ -83,11 +84,11 @@ class _MyHomePageState extends State<MyHomePage> {
     if (cor == null) {
       paint
         ..color = Colors.black
-        ..strokeWidth = pixel;
+        ..strokeWidth = tamanhoPixel;
     } else {
       paint
         ..color = cor
-        ..strokeWidth = pixel;
+        ..strokeWidth = tamanhoPixel;
     }
 
     return paint;
@@ -146,6 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void _limparTodosObjetos() {
     setState(() {
       todosObjetos.clear();
+      _objetoAtual!.points.clear();
+      todosObjetos.add(_objetoAtual!);
     });
   }
 
@@ -263,6 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
           var (mim, max) = _objetoAtual!.retornaExtremos();
 
+          // Representa um ponto central no objeto
           var xmedia = (mim.dx + max.dx) / 2;
           var ymedia = (mim.dy + max.dy) / 2;
 
