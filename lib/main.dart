@@ -57,9 +57,10 @@ class _MyHomePageState extends State<MyHomePage> {
     final paint = Paint()
       ..color = const Color.fromARGB(255, 121, 137, 255)
       ..strokeWidth = tamanhoPixel;
+    _janela = Janela(true, paint);
+    _criarObjetoTeste();
     _objetoAtual = Objeto(fechar, _corObjetos(null));
     todosObjetos.add(_objetoAtual!);
-    _janela = Janela(true, paint);
   }
 
   final viewTransformationController = TransformationController();
@@ -76,6 +77,20 @@ class _MyHomePageState extends State<MyHomePage> {
     viewTransformationController.value.setEntry(0, 3, -xTranslate);
     viewTransformationController.value.setEntry(1, 3, -yTranslate);
     super.initState();
+  }
+
+  //Cria pontos especificos na janela para realização de testes
+  _criarObjetoTeste() {
+    var objeto = Objeto(true, _corObjetos(null));
+    objeto.points.add(const Offset(-1, -3));
+    objeto.points.add(const Offset(-2, 8));
+    objeto.points.add(const Offset(9, 2));
+    todosObjetos.add(objeto);
+
+    // Abilitiar pontos especificos na Janela
+    _adicionarPontoJanelaTeste(const Offset(-2 + 5, 1 + 5));
+    _adicionarPontoJanelaTeste(const Offset(5 + 5, 6 + 5));
+    _janela!.abilitar = true;
   }
 
   // A cor padão dos objetos é preta
@@ -113,6 +128,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _adicionarPontoJanela(TapUpDetails details) {
     _janela!.points.add(details.localPosition);
+    // Para criar a janela so é necessario 2 pontos,
+    // os outros 2 pontos para fechar o retangulo são criados automaticamente.
+    if (_janela!.points.length == 2) {
+      _janela!.points
+          .insert(1, Offset(_janela!.points.last.dx, _janela!.points.first.dy));
+      _janela!.points
+          .add(Offset(_janela!.points.first.dx, _janela!.points.last.dy));
+    }
+  }
+
+  void _adicionarPontoJanelaTeste(Offset ponto) {
+    _janela!.points.add(ponto);
     // Para criar a janela so é necessario 2 pontos,
     // os outros 2 pontos para fechar o retangulo são criados automaticamente.
     if (_janela!.points.length == 2) {
