@@ -81,15 +81,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //Cria pontos especificos na janela para realização de testes
   _criarObjetoTeste() {
-    var objeto = Objeto(true, _corObjetos(null));
+    var objeto = Objeto(false, _corObjetos(null));
     objeto.points.add(const Offset(-1, -3));
-    objeto.points.add(const Offset(-2, 8));
-    objeto.points.add(const Offset(9, 2));
+    objeto.points.add(const Offset(6, 6));
+    // objeto.points.add(const Offset(9, 2));
     todosObjetos.add(objeto);
 
     // Abilitiar pontos especificos na Janela
-    _adicionarPontoJanelaTeste(const Offset(-2 + 5, 1 + 5));
-    _adicionarPontoJanelaTeste(const Offset(5 + 5, 6 + 5));
+    _adicionarPontoJanelaTeste(const Offset(0, 0));
+    _adicionarPontoJanelaTeste(const Offset(8, 6));
     _janela!.abilitar = true;
   }
 

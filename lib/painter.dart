@@ -554,14 +554,14 @@ class MyPainter extends CustomPainter {
         }
 
         if (c1 == cfora) {
-          p1 = Offset(xint.roundToDouble(), yint.roundToDouble());
+          p1 = Offset(xint, yint);
         } else {
-          p2 = Offset(xint.roundToDouble(), yint.roundToDouble());
+          p2 = Offset(xint, yint);
         }
       }
       if (aceite) {
-        offsets.add(p1);
-        offsets.add(p2);
+        offsets.add(Offset(p1.dx.roundToDouble(), p1.dy.roundToDouble()));
+        offsets.add(Offset(p2.dx.roundToDouble(), p2.dy.roundToDouble()));
       }
     }
 
